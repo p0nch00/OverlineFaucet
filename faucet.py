@@ -32,7 +32,7 @@ def send_faucet_transaction(guild: str, address: str, tokens: float):
     log("Trying to send mainnet transaction with nonce " + str(nonce) + "...")
 
     # Iterate over a few different gas values, with 30 seconds between to make sure it goes through
-    for gas in [35*1e9, 50*1e9, 100*1e9, 350*1e9, 500*1e9]:
+    for gas in [35*1e9, 50*1e9, 100*1e9, 350*1e9, 500*1e9, 1000*1e9]:
         try:
             log("Trying mainnet transaction to " + address + " with nonce " + str(nonce) + " and gas " + str(gas/1e9))
 

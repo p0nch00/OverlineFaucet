@@ -1,3 +1,4 @@
+import datetime
 from math import floor
 import requests
 from logger import log
@@ -44,6 +45,7 @@ def initial_setup():
         cur.execute("CREATE TABLE Blacklisted(Address VARCHAR(42), "
                                              "Blacklisted BOOLEAN, "
                                              "Imported BOOLEAN);")
+        cur.close()
         conn.close()
     except mariadb.Error as e:
         log(f"Error: {e}")
@@ -59,19 +61,9 @@ def get_user_totals(user_id: str, address: str):
     for id, addr, tkns in cur:
         if str(user_id) == str(id) or addr == address:
             tokens += tkns
-
+    cur.close()
     conn.close()
     return tokens
-
-
-
-def get_blacklist_addresses():
-    conn = connection()
-    cur = conn.cursor()
-    cur.execute("SELECT address FROM Blacklisted")
-    conn.close()
-    return list(cur.fetchall())
-
 
 
 def add_transaction(user_id: str, address: str, tokens: float, timestamp: str):
@@ -96,13 +88,14 @@ def add_transaction(user_id: str, address: str, tokens: float, timestamp: str):
         else:
             cur.execute("INSERT INTO Transactions VALUES (?, ?, ?, ?, ?)",
                         (user_id, address, tokens, timestamp, timestamp))
-        cur.execute("SELECT * FROM Transactions;")
 
         conn.commit()
+        cur.close()
         conn.close()
         return True
     except mariadb.Error as e:
         log(f"Error: {e}")
+        conn.close()
         return False
 
 
@@ -113,11 +106,14 @@ def add_user(user_name: str, user_id: str):
 
     for id, name in cur:
         if user_id == id and name == user_name:
+            cur.close()
+            conn.close()
             return True
 
     try:
         cur.execute("INSERT INTO Users VALUES (?, ?)", (user_id, user_name))
         conn.commit()
+        cur.close()
         conn.close()
         return True
     except mariadb.Error as e:
@@ -125,8 +121,31 @@ def add_user(user_name: str, user_id: str):
         return False
 
 
-def add_blacklisted_address():
-    pass
+def check_if_address_is_blacklisted(address: str):
+    conn = connection()
+    cur = conn.cursor()
+    cur.execute("SELECT address FROM Blacklisted")
+    for addr in cur:
+        if addr == address:
+            conn.close()
+            return True
+    conn.close()
+    return False
+
+
+def add_blacklisted_address(address: str):
+    conn = connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM Blacklisted WHERE Address = (?)", (address,))
+    if cur.fetchall():
+        response = "Address already blacklisted."
+    else:
+        cur.execute("INSERT INTO Blacklisted VALUES (?, ?, ?)", (address, 1, 1))
+        conn.commit()
+        response = "Address blacklisted."
+    conn.close()
+    return response
+
 
 def get_if_existing_account(address: str):
     response = requests.get("https://api.polygonscan.com/api" +
