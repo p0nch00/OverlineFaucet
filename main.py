@@ -42,8 +42,8 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) +
                       ") requested too few tokens.")
 
-    # if the address's balance already has 0.05 Matic, deny
-    elif faucet.get_balance(address) > secrets.MAX_TOKENS_REQUESTED:
+    # if the address's balance already has enough Matic, deny
+    elif faucet.get_balance(address) >= secrets.MAX_TOKENS_REQUESTED:
         response = "Address has greater than " + str(secrets.MAX_TOKENS_REQUESTED) + " Matic."
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) + ") already has " +
                       str(faucet.get_balance(guild)) + " tokens in their wallet.")
@@ -168,7 +168,7 @@ async def get_mainnet_balance(ctx):
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) + ") checked the balance.")
         await ctx.send(response)
     except Exception as e:
-        print(e)
+        log(e)
 
 
 @bot.command(name='blacklist', help='usage: faucet-blacklist [address]')
@@ -179,7 +179,6 @@ async def blacklist_address(ctx, address: str):
     return
 
 
-
 @bot.command(name='mumbai', help='usage: faucet-mumbai [address] [tokens]')
 @commands.has_role(secrets.ADMIN_DISCORD_ROLE)
 async def mumbai_faucet(ctx, address: str, tokens=1.0):
@@ -187,7 +186,7 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
     guild = str(ctx.guild)
 
     if valid_address(address):
-        if faucet.get_balance(guild) > tokens:
+        if faucet.get_mumbai_balance(guild) > tokens:
             faucet.send_mumbai_faucet_transaction(guild, address, tokens)
             response = "Sending " + str(tokens) + " test Matic to " + \
                        address[:4] + "..." + address[-2:] + "."
@@ -238,7 +237,6 @@ async def mumbai_faucet_error(ctx, error):
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for this command.')
-
 
 
 

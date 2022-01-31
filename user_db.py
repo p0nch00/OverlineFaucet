@@ -122,13 +122,32 @@ def add_user(user_name: str, user_id: str):
 
 
 def check_if_address_is_blacklisted(address: str):
+    response = requests.get("https://api.polygonscan.com/api" +
+                            "?module=account" +
+                            "&action=txlist" +
+                            "&address=" + address +
+                            "&startblock=10000000" +
+                            "&endblock=99999999" +
+                            "&page=1" +
+                            "&offset=100" +
+                            "&sort=asc" +
+                            "&apikey=" + secrets.POLYGONSCAN_API_KEY)
+
+    addresses = [address]
+    result = response.json()['result']
+    for tx in result:
+        addresses.append(tx['from'])
+        addresses.append(tx['to'])
+
     conn = connection()
     cur = conn.cursor()
     cur.execute("SELECT address FROM Blacklisted")
+
     for addr in cur:
-        if addr == address:
+        if addr[0] in addresses:
             conn.close()
             return True
+
     conn.close()
     return False
 
@@ -172,8 +191,32 @@ def get_if_existing_account(address: str):
                             "&apikey=" + secrets.POLYGONSCAN_API_KEY)
     erc_20_transactions = len(response.json()['result'])
 
+    '''https: // api.polygonscan.com / api
+    ?module = account
+    & action = tokennfttx
+    & contractaddress = 0x7227e371540cf7b8e512544ba6871472031f3335
+    & address = 0x30b32e79ed9c4012a71f4235f77dcf90a6f6800f
+    & startblock = 0
+    & endblock = 99999999
+    & page = 1
+    & offset = 100
+    & sort = asc
+    & apikey = YourApiKeyToken'''
+
+    response = requests.get("https://api.polygonscan.com/api" +
+                            "?module=account" +
+                            "&action=tokennfttx" +
+                            "&address=" + address +
+                            "&startblock=1000000" +
+                            "&endblock=99999999" +
+                            "&page=1" +
+                            "&offset=5" +
+                            "&sort=asc" +
+                            "&apikey=" + secrets.POLYGONSCAN_API_KEY)
+    erc_721_transactions = len(response.json()['result'])
+
     log(address + " has " + str(normal_transactions) + " transactions and " +
         str(erc_20_transactions) + " erc-20 transactions.")
-    if (1 <= normal_transactions < 20) or 1 <= erc_20_transactions < 20:
+    if 1 <= normal_transactions < 20 or 1 <= erc_20_transactions < 20 or 1 <= erc_721_transactions < 20:
         return True
     return False

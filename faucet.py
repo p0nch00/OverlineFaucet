@@ -87,7 +87,7 @@ def send_mumbai_faucet_transaction(guild: str, address: str, tokens: float):
 # Get faucet balance
 def get_balance(address):
 
-    if address in ["Polygon", "Crypto Community"]:
+    if address in ["Polygon", "Billion Dollar Dream"]:
         address, token_from_private_key = secrets.get_guild_wallet(address)
     try:
         response = w3.eth.getBalance(address)/1e18
