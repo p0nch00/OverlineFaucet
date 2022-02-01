@@ -79,7 +79,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
                    "and lower-case letters. This can be found on Polygonscan, or your wallet."
         raw_audit_log(str(datetime.now()) + ": "+address+" was in the wrong format.")
 
-    elif user_db.check_if_address_is_blacklisted(address):
+    elif user_db.check_if_blacklisted(ctx.author.id, address):
         response = "Something went wrong. cc:<@712863455467667526>"
         raw_audit_log(str(datetime.now()) + ": " + address + " is on the blacklist.")
 

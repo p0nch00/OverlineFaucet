@@ -42,7 +42,8 @@ def initial_setup():
         cur.execute("CREATE TABLE Users(UserID VARCHAR(20), "
                                        "Username varchar(50));")
 
-        cur.execute("CREATE TABLE Blacklisted(Address VARCHAR(42), "
+        cur.execute("CREATE TABLE Blacklisted(UserID VARCHAR(20), "
+                                             "Address VARCHAR(42), "
                                              "Blacklisted BOOLEAN, "
                                              "Imported BOOLEAN);")
         cur.close()
@@ -104,8 +105,8 @@ def add_user(user_name: str, user_id: str):
     cur = conn.cursor()
     cur.execute("SELECT UserID, Username FROM Users")
 
-    for id, name in cur:
-        if user_id == id and name == user_name:
+    for uid, name in cur:
+        if user_id == uid and name == user_name:
             cur.close()
             conn.close()
             return True
@@ -121,7 +122,18 @@ def add_user(user_name: str, user_id: str):
         return False
 
 
-def check_if_address_is_blacklisted(address: str):
+def check_if_blacklisted(user: str, address: str):
+    conn = connection()
+    cur = conn.cursor()
+    cur.execute("SELECT UserID FROM Blacklisted")
+
+    for user_id in cur:
+        if user_id[0] == user:
+            add_blacklisted_user(user, address)
+            conn.close()
+            return True
+
+
     response = requests.get("https://api.polygonscan.com/api" +
                             "?module=account" +
                             "&action=txlist" +
@@ -139,27 +151,41 @@ def check_if_address_is_blacklisted(address: str):
         addresses.append(tx['from'])
         addresses.append(tx['to'])
 
-    conn = connection()
-    cur = conn.cursor()
-    cur.execute("SELECT address FROM Blacklisted")
+    cur.execute("SELECT Address FROM Blacklisted")
 
     for addr in cur:
         if addr[0] in addresses:
+            add_blacklisted_address(user, address)
             conn.close()
             return True
 
     conn.close()
     return False
 
-
-def add_blacklisted_address(address: str):
+def add_blacklisted_address(user: str, address: str):
     conn = connection()
     cur = conn.cursor()
-    cur.execute("SELECT * FROM Blacklisted WHERE Address = (?)", (address,))
+    command = "SELECT * FROM Blacklisted " \
+              "WHERE UserID = '" + str(user) + "' AND Address = '" + address + "';"
+    cur.execute(command)
     if cur.fetchall():
         response = "Address already blacklisted."
     else:
-        cur.execute("INSERT INTO Blacklisted VALUES (?, ?, ?)", (address, 1, 1))
+        cur.execute("INSERT INTO Blacklisted VALUES (?, ?, ?, ?)", (address, 1, 1, user))
+        conn.commit()
+        response = "Address blacklisted."
+    conn.close()
+    return response
+
+
+def add_blacklisted_user(user: str, address=""):
+    conn = connection()
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM Blacklisted WHERE UserID = (?)", (user,))
+    if cur.fetchall():
+        response = "User already blacklisted."
+    else:
+        cur.execute("INSERT INTO Blacklisted VALUES (?, ?, ?, ?)", (address, 1, 1, user))
         conn.commit()
         response = "Address blacklisted."
     conn.close()
