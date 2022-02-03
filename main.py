@@ -31,6 +31,8 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
     guild = str(ctx.guild)
     faucet_address, x = secrets.get_guild_wallet(guild)
     x=""
+    user_db.check_if_blacklisted(ctx.author.id, address)
+
     # if user's token request is not between 0.04 and 0.001, deny
     if tokens > secrets.MAX_TOKENS_REQUESTED:
         response = "Please only request up to " + str(secrets.MAX_TOKENS_REQUESTED) + " Matic at a time."
@@ -174,7 +176,7 @@ async def get_mainnet_balance(ctx):
 @bot.command(name='blacklist', help='usage: faucet-blacklist [address]')
 @commands.has_role(secrets.ADMIN_DISCORD_ROLE)
 async def blacklist_address(ctx, address: str):
-    await ctx.send(user_db.add_blacklisted_address(address))
+    await ctx.send(user_db.add_blacklisted_address(ctx.author.id, address))
     log(address + " blacklisted.")
     return
 

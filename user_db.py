@@ -159,8 +159,16 @@ def check_if_blacklisted(user: str, address: str):
             conn.close()
             return True
 
+    cur.execute("SELECT Address FROM Transactions")
+
+    for addr in cur:
+        if addr[0] in addresses:
+            conn.close()
+            return True
+
     conn.close()
     return False
+
 
 def add_blacklisted_address(user: str, address: str):
     conn = connection()
@@ -203,7 +211,8 @@ def get_if_existing_account(address: str):
                             "&offset=10" +
                             "&sort=asc" +
                             "&apikey=" + secrets.POLYGONSCAN_API_KEY)
-    normal_transactions = len(response.json()['result'])
+    normal_tx_content = response.json()['result']
+    normal_transactions = len(normal_tx_content)
 
     response = requests.get("https://api.polygonscan.com/api" +
                             "?module=account" +
@@ -216,18 +225,6 @@ def get_if_existing_account(address: str):
                             "&sort=asc" +
                             "&apikey=" + secrets.POLYGONSCAN_API_KEY)
     erc_20_transactions = len(response.json()['result'])
-
-    '''https: // api.polygonscan.com / api
-    ?module = account
-    & action = tokennfttx
-    & contractaddress = 0x7227e371540cf7b8e512544ba6871472031f3335
-    & address = 0x30b32e79ed9c4012a71f4235f77dcf90a6f6800f
-    & startblock = 0
-    & endblock = 99999999
-    & page = 1
-    & offset = 100
-    & sort = asc
-    & apikey = YourApiKeyToken'''
 
     response = requests.get("https://api.polygonscan.com/api" +
                             "?module=account" +
@@ -243,6 +240,13 @@ def get_if_existing_account(address: str):
 
     log(address + " has " + str(normal_transactions) + " transactions and " +
         str(erc_20_transactions) + " erc-20 transactions.")
+
+    if normal_transactions == 1 and erc_20_transactions == 0 and erc_721_transactions == 0 and \
+        normal_tx_content[0]['from'] == "0x8c5a6c767ee7084a8c656acd457da9561163ae7e":
+        log(address + " is a matic.supply scammer.")
+        add_blacklisted_address("", address)
+        return False
+
     if 1 <= normal_transactions < 20 or 1 <= erc_20_transactions < 20 or 1 <= erc_721_transactions < 20:
         return True
     return False
