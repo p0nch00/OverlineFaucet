@@ -24,7 +24,7 @@ async def on_ready():
 
 
 @bot.command(name='send', help='usage: faucet-send  [address] [tokens')
-@commands.has_any_role(secrets.MEMBER_DISCORD_ROLE, "Member", "Admin")
+@commands.has_any_role(secrets.MEMBER_DISCORD_ROLE, "Member", "admin", "Admin")
 async def mainnet_faucet(ctx, address: str, tokens=0.01):
     # tokens = 0.01
     audit_log(str(ctx.author), str(ctx.author.id), address, tokens)
@@ -111,7 +111,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
 
 
 @bot.command(name='override', help='usage: faucet-override [address] [tokens]')
-@commands.has_any_role("Mod", "Admin", "Faucet Creator", "Polygon Advocate")
+@commands.has_any_role("Mod", "Admin", "admin", "Faucet Creator", "Polygon Advocate")
 async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
     log('mainnet_faucet_override called')
     guild = str(ctx.guild)

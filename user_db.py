@@ -131,7 +131,7 @@ def check_if_blacklisted(user: str, address: str):
         if user_id[0] == user:
             add_blacklisted_user(user, address)
             conn.close()
-            log(user + " is on the blacklist.")
+            log(str(user) + " is on the blacklist.")
             return True
 
 
@@ -158,7 +158,7 @@ def check_if_blacklisted(user: str, address: str):
         if addr[0] in addresses:
             add_blacklisted_address(user, address)
             conn.close()
-            log(address + " is on the blacklist.")
+            log(str(address) + " is on the blacklist.")
             return True
 
     cur.execute("SELECT Address FROM Transactions")
@@ -171,7 +171,7 @@ def check_if_blacklisted(user: str, address: str):
             return True
 
     conn.close()
-    log(user + " and " + address + " not found in the blacklist.")
+    log(str(user) + " and " + str(address) + " not found in the blacklist.")
     return False
 
 
@@ -255,5 +255,3 @@ def get_if_existing_account(address: str):
     if 1 <= normal_transactions < 20 or 1 <= erc_20_transactions < 20 or 1 <= erc_721_transactions < 20:
         return True
     return False
-
-print(check_if_blacklisted("939216399564423239", "0x70a61e950285bEC50236f8581D3258286Ba4a182"))
