@@ -161,6 +161,7 @@ def check_if_blacklisted(user: str, address: str):
 
     cur.execute("SELECT Address FROM Transactions")
 
+    addresses.remove(address)
     for addr in cur:
         if addr[0] in addresses:
             conn.close()
@@ -250,3 +251,6 @@ def get_if_existing_account(address: str):
     if 1 <= normal_transactions < 20 or 1 <= erc_20_transactions < 20 or 1 <= erc_721_transactions < 20:
         return True
     return False
+
+
+print(check_if_blacklisted("good", "0x76Dd03bE66dc01b017561cDfe9941bcA50B976a5"))

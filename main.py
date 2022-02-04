@@ -111,7 +111,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
 
 
 @bot.command(name='override', help='usage: faucet-override [address] [tokens]')
-@commands.has_any_role("Mod", "Admin", "Faucet Creator")
+@commands.has_any_role("Mod", "Admin", "Faucet Creator", "Polygon Advocate")
 async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
     log('mainnet_faucet_override called')
     guild = str(ctx.guild)
