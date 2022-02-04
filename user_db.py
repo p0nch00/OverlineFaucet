@@ -125,12 +125,13 @@ def add_user(user_name: str, user_id: str):
 def check_if_blacklisted(user: str, address: str):
     conn = connection()
     cur = conn.cursor()
-    cur.execute("SELECT UserID FROM Blacklisted")
+    cur.execute("SELECT UserID FROM Blacklisted;")
 
     for user_id in cur:
         if user_id[0] == user:
             add_blacklisted_user(user, address)
             conn.close()
+            log(user + " is on the blacklist.")
             return True
 
 
@@ -157,6 +158,7 @@ def check_if_blacklisted(user: str, address: str):
         if addr[0] in addresses:
             add_blacklisted_address(user, address)
             conn.close()
+            log(address + " is on the blacklist.")
             return True
 
     cur.execute("SELECT Address FROM Transactions")
@@ -165,9 +167,11 @@ def check_if_blacklisted(user: str, address: str):
     for addr in cur:
         if addr[0] in addresses:
             conn.close()
+            log(address + " has a connection to " + addr[0]+".")
             return True
 
     conn.close()
+    log(user + " and " + address + " not found in the blacklist.")
     return False
 
 
@@ -252,5 +256,4 @@ def get_if_existing_account(address: str):
         return True
     return False
 
-
-print(check_if_blacklisted("good", "0x76Dd03bE66dc01b017561cDfe9941bcA50B976a5"))
+print(check_if_blacklisted("939216399564423239", "0x70a61e950285bEC50236f8581D3258286Ba4a182"))
