@@ -20,9 +20,9 @@ def valid_address(address):
 
 
 # Send a transaction to the requestor
-def send_faucet_transaction(guild: str, address: str, tokens: float):
+def send_faucet_transaction(address: str, tokens: float):
     #Get faucet address and faucet's private key from secrets file
-    token_from, token_from_private_key = secrets.get_guild_wallet(guild)
+    token_from, token_from_private_key = secrets.get_guild_wallet()
 
     # Token input is in Matic, we need to add the additional 18 decimal places
     tokens = tokens*1e18
@@ -65,8 +65,8 @@ def send_faucet_transaction(guild: str, address: str, tokens: float):
     return False
 
 
-def send_mumbai_faucet_transaction(guild: str, address: str, tokens: float):
-    token_from, token_from_private_key = secrets.get_guild_wallet(guild)
+def send_mumbai_faucet_transaction(address: str, tokens: float):
+    token_from, token_from_private_key = secrets.get_guild_wallet()
 
     nonce = mumbai_w3.eth.getTransactionCount(token_from)
     signed_txn = mumbai_w3.eth.account.sign_transaction(dict(
@@ -84,11 +84,19 @@ def send_mumbai_faucet_transaction(guild: str, address: str, tokens: float):
     mumbai_w3.eth.send_raw_transaction(signed_txn.rawTransaction)
 
 
-# Get faucet balance
+# Get address balance
 def get_balance(address):
 
-    if address in ["Polygon", "Billion Dollar Dream"]:
-        address, token_from_private_key = secrets.get_guild_wallet(address)
+    try:
+        response = w3.eth.getBalance(address)/1e18
+    except Exception as e:
+        print(e)
+        response = 0.0
+    return response
+
+# Get faucet balance
+def get_faucet_balance():
+    address, token_from_private_key = secrets.get_guild_wallet()
     try:
         response = w3.eth.getBalance(address)/1e18
     except Exception as e:
@@ -97,8 +105,8 @@ def get_balance(address):
     return response
 
 
-def get_mumbai_balance(guild: str):
-    token_from, token_from_private_key = secrets.get_guild_wallet(guild)
+def get_mumbai_balance():
+    token_from, token_from_private_key = secrets.get_guild_wallet()
 
     try:
         response = mumbai_w3.eth.getBalance(token_from)/1e18

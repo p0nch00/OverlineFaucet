@@ -28,8 +28,7 @@ async def on_ready():
 async def mainnet_faucet(ctx, address: str, tokens=0.01):
     # tokens = 0.01
     audit_log(str(ctx.author), str(ctx.author.id), address, tokens)
-    guild = str(ctx.guild)
-    faucet_address, x = secrets.get_guild_wallet(guild)
+    faucet_address, x = secrets.get_guild_wallet()
     x=""
     user_db.check_if_blacklisted(ctx.author.id, address)
 
@@ -48,7 +47,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
     elif faucet.get_balance(address) >= secrets.MAX_TOKENS_REQUESTED:
         response = "Address has greater than " + str(secrets.MAX_TOKENS_REQUESTED) + " Matic."
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) + ") already has " +
-                      str(faucet.get_balance(guild)) + " tokens in their wallet.")
+                      str(faucet.get_faucet_balance()) + " tokens in their wallet.")
 
     # if the user or address has already received > 0.03 Matic, deny
     elif user_db.get_user_totals(ctx.author.id, address) >= secrets.MAX_TOKENS_REQUESTED:
@@ -71,7 +70,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) + ") has 0 transactions.")
 
     # if the faucet does not have enough funds, deny
-    elif faucet.get_balance(guild) < (tokens + secrets.MAX_TOKENS_REQUESTED):
+    elif faucet.get_faucet_balance() < (tokens + secrets.MAX_TOKENS_REQUESTED):
         response = "The faucet does not have enough funds. Please refill. \n" \
                    "`" + faucet_address + "`"
         raw_audit_log(str(datetime.now()) + ": The faucet is out of funds.")
@@ -90,13 +89,13 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
         await ctx.send("The transaction has started and can take up to 2 minutes. Please wait until " +
                        "confirmation before requesting more.")
 
-        success = faucet.send_faucet_transaction(guild, address, tokens)
+        success = faucet.send_faucet_transaction(address, tokens)
 
         # success = True
         if success:
             user_db.add_user(str(ctx.author.id), str(ctx.author))
             user_db.add_transaction(str(ctx.author.id), address, tokens, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"))
-            faucet_balance = faucet.get_balance(guild)
+            faucet_balance = faucet.get_faucet_balance()
             response = "**Sent " + str(tokens) + " Matic to " + address[:6] + "..." + \
                        address[-4:] + ".** The faucet now has " + str(faucet_balance) + " Matic left. \n" + \
                        thanks(faucet_address)
@@ -115,19 +114,17 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
 async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
     print("here")
     log('mainnet_faucet_override called')
-    guild = str(ctx.guild)
-    faucet_balance = faucet.get_balance(guild)
 
     # if we have a good address
     if valid_address(address):
 
-        if faucet.get_balance(guild) > (tokens + 0.01):
+        if faucet.get_faucet_balance() > (tokens + 0.01):
             await ctx.send("The transaction has started and can take up to 2 minutes.")
 
-            success = faucet.send_faucet_transaction(guild, address, tokens)
+            success = faucet.send_faucet_transaction(address, tokens)
             if success:
                 response = "**Sent " + str(tokens) + " Matic to " + address[:4] + "..." + address[-2:] +  \
-                            ". **The faucet now has " + str(faucet_balance) + " Matic left."
+                            ". **The faucet now has " + str(faucet.get_faucet_balance()) + " Matic left."
             else:
                 response = "There was an error and <@712863455467667526> has been notified."
         else:
@@ -161,11 +158,10 @@ async def mainnet_faucet_error(ctx, error):
 @bot.command(name='balance', help='usage: faucet-balance')
 @commands.has_any_role(*secrets.MEMBER_DISCORD_ROLES)
 async def get_mainnet_balance(ctx):
-    guild = str(ctx.guild)
-    faucet_address, x = secrets.get_guild_wallet(guild)
+    faucet_address, x = secrets.get_guild_wallet()
     x = ""
     try:
-        balance = faucet.get_balance(guild)
+        balance = faucet.get_faucet_balance()
         response = "The faucet has " + str(balance) + " Matic. \n" \
                    "To contribute, you can send Matic to `" + faucet_address + "`."
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) + ") checked the balance.")
@@ -186,11 +182,10 @@ async def blacklist_address(ctx, address: str):
 @commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
 async def mumbai_faucet(ctx, address: str, tokens=1.0):
     log("Mumbai-faucet called")
-    guild = str(ctx.guild)
 
     if valid_address(address):
-        if faucet.get_mumbai_balance(guild) > tokens:
-            faucet.send_mumbai_faucet_transaction(guild, address, tokens)
+        if faucet.get_mumbai_balance() > tokens:
+            faucet.send_mumbai_faucet_transaction(address, tokens)
             response = "Sending " + str(tokens) + " test Matic to " + \
                        address[:4] + "..." + address[-2:] + "."
         else:
@@ -208,10 +203,9 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
 @bot.command(name='mumbai-balance', help='usage: faucet-mumbai-balance')
 @commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
 async def get_mumbai_balance(ctx):
-    guild = str(ctx.guild)
 
     try:
-        balance = faucet.get_mumbai_balance(guild)
+        balance = faucet.get_mumbai_balance()
         response = "The faucet has " + str(balance) + " Maticmum"
         await ctx.send(response)
     except Exception as e:
@@ -242,25 +236,4 @@ async def on_command_error(ctx, error):
         await ctx.send('You do not have the correct role for this command.')
 
 
-
-
 bot.run(token)
-
-# @bot.event
-# async def on_message(message):
-#     # this line handles the case for the bot itself
-#     if message.author == bot.user:
-#         return
-#
-#     # checks to see if the message starts with a bot command containing that would contain an address
-#     cmds = ['faucet-send', 'faucet-mumbai']
-#     if message.content.split(" ")[0] in cmds and valid_address(message.content.split(" ")[1]):
-#         # Necessary to also listen for commands
-#         await bot.process_commands(message)
-#         sleep(2)
-#         await message.delete()
-#         log("Message deleted")
-#
-#     else:
-#         # Necessary to also listen for commands
-#         await bot.process_commands(message)
