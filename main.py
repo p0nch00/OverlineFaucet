@@ -24,7 +24,7 @@ async def on_ready():
 
 
 @bot.command(name='send', help='usage: faucet-send  [address] [tokens')
-@commands.has_any_role(secrets.MEMBER_DISCORD_ROLE, "Member", "admin", "Admin")
+@commands.has_any_role(*secrets.MEMBER_DISCORD_ROLES)
 async def mainnet_faucet(ctx, address: str, tokens=0.01):
     # tokens = 0.01
     audit_log(str(ctx.author), str(ctx.author.id), address, tokens)
@@ -67,7 +67,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
 
     # if the address has 0 transactions, deny
     elif not user_db.get_if_existing_account(address):
-        response = "Addresses are required to have funds in the wallet to request. cc:<@712863455467667526>."
+        response = "Addresses are required to have funds in the wallet to request."
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) + ") has 0 transactions.")
 
     # if the faucet does not have enough funds, deny
@@ -111,8 +111,9 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
 
 
 @bot.command(name='override', help='usage: faucet-override [address] [tokens]')
-@commands.has_any_role("Mod", "Admin", "admin", "Faucet Creator", "Polygon Advocate")
+@commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
 async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
+    print("here")
     log('mainnet_faucet_override called')
     guild = str(ctx.guild)
     faucet_balance = faucet.get_balance(guild)
@@ -151,14 +152,14 @@ async def mainnet_faucet_error(ctx, error):
         await ctx.send("usage: `faucet-send  [address]`")
         raise error
     elif isinstance(error, MissingRole):
-        await ctx.send("Role '" + secrets.MEMBER_DISCORD_ROLE + "' is required to run this command.")
+        await ctx.send("Role '" + secrets.MEMBER_DISCORD_ROLES + "' is required to run this command.")
         raise error
     else:
         raise error
 
 
 @bot.command(name='balance', help='usage: faucet-balance')
-@commands.has_any_role(secrets.MEMBER_DISCORD_ROLE, "Member", "Admin")
+@commands.has_any_role(*secrets.MEMBER_DISCORD_ROLES)
 async def get_mainnet_balance(ctx):
     guild = str(ctx.guild)
     faucet_address, x = secrets.get_guild_wallet(guild)
@@ -174,7 +175,7 @@ async def get_mainnet_balance(ctx):
 
 
 @bot.command(name='blacklist', help='usage: faucet-blacklist [address]')
-@commands.has_role(secrets.ADMIN_DISCORD_ROLE)
+@commands.has_role(**secrets.ADMIN_DISCORD_ROLES)
 async def blacklist_address(ctx, address: str):
     await ctx.send(user_db.add_blacklisted_address(ctx.author.id, address))
     log(address + " blacklisted.")
@@ -182,7 +183,7 @@ async def blacklist_address(ctx, address: str):
 
 
 @bot.command(name='mumbai', help='usage: faucet-mumbai [address] [tokens]')
-@commands.has_role(secrets.ADMIN_DISCORD_ROLE)
+@commands.has_role(*secrets.ADMIN_DISCORD_ROLES)
 async def mumbai_faucet(ctx, address: str, tokens=1.0):
     log("Mumbai-faucet called")
     guild = str(ctx.guild)
@@ -205,7 +206,7 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
 
 
 @bot.command(name='mumbai-balance', help='usage: faucet-mumbai-balance')
-@commands.has_role(secrets.ADMIN_DISCORD_ROLE)
+@commands.has_role(*secrets.ADMIN_DISCORD_ROLES)
 async def get_mumbai_balance(ctx):
     guild = str(ctx.guild)
 
