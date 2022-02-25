@@ -175,7 +175,7 @@ async def get_mainnet_balance(ctx):
 
 
 @bot.command(name='blacklist', help='usage: faucet-blacklist [address]')
-@commands.has_roles(*secrets.ADMIN_DISCORD_ROLES)
+@commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
 async def blacklist_address(ctx, address: str):
     await ctx.send(user_db.add_blacklisted_address(ctx.author.id, address))
     log(address + " blacklisted.")
@@ -183,7 +183,7 @@ async def blacklist_address(ctx, address: str):
 
 
 @bot.command(name='mumbai', help='usage: faucet-mumbai [address] [tokens]')
-@commands.has_roles(*secrets.ADMIN_DISCORD_ROLES)
+@commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
 async def mumbai_faucet(ctx, address: str, tokens=1.0):
     log("Mumbai-faucet called")
     guild = str(ctx.guild)
@@ -206,7 +206,7 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
 
 
 @bot.command(name='mumbai-balance', help='usage: faucet-mumbai-balance')
-@commands.has_roles(*secrets.ADMIN_DISCORD_ROLES)
+@commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
 async def get_mumbai_balance(ctx):
     guild = str(ctx.guild)
 
