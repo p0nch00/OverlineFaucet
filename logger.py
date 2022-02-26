@@ -1,15 +1,20 @@
 import secrets
 from datetime import datetime
 
+import logging
+#from systemd.journal import JournalHandler
+#log = logging.getLogger('faucet')
+#log.addHandler(JournalHandler())
+#log.setLevel(logging.INFO)
+
+#def log(message):
+#    if secrets.environment == 'test':
+#        print(message)
 #
-# def log(message):
-#     if secrets.environment == 'test':
-#         print(message)
-#
-#     else:
-#         from systemd import journal
-#
-#         journal.write(message)
+#    else:
+#        log = logging.getLogger('faucet')
+#        log.setLevel(logging.INFO)
+#        log.info(message)
 
 
 def log(message):
