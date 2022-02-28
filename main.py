@@ -24,7 +24,7 @@ async def on_ready():
 
 
 @bot.command(name='send', help='usage: faucet-send  [address] [tokens')
-@commands.has_any_role(*secrets.MEMBER_DISCORD_ROLES)
+# @commands.has_any_role(*secrets.MEMBER_DISCORD_ROLES)
 async def mainnet_faucet(ctx, address: str, tokens=0.01):
     # tokens = 0.01
     audit_log(str(ctx.author), str(ctx.author.id), address, tokens)
@@ -184,13 +184,26 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
     log("Mumbai-faucet called")
 
     if valid_address(address):
-        if faucet.get_mumbai_balance() > tokens:
-            faucet.send_mumbai_faucet_transaction(address, tokens)
-            response = "Sending " + str(tokens) + " test Matic to " + \
-                       address[:4] + "..." + address[-2:] + "."
+        if faucet.get_mumbai_balance() <= tokens:
+
+            await ctx.send("The transaction has started and can take up to 2 minutes. Please wait until " +
+                           "confirmation before requesting more.")
+
+            success = faucet.send_mumbai_faucet_transaction(address, tokens)
+
+            # success = True
+            if success:
+                faucet_balance = faucet.get_mumbai_balance()
+                response = "**Sent " + str(tokens) + " test Matic to " + address[:6] + "..." + \
+                           address[-4:] + ".** The faucet now has " + str(faucet_balance) + " test Matic left."
+
+            else:
+                response = "The bot cannot confirm the transaction went through, please check on Polygonscan. " \
+                           "If still not received, try again. cc:<@712863455467667526>"
         else:
             response = "The faucet does not have enough funds. Please enter a lower amount or add more to " \
                        "`0xD8a3dfCae8348E6C52b929c8E50217AD7e4cCa68`"
+
 
     else:
         response = "usage: `faucet-mumbai  [address]  [tokens]`. \n" \

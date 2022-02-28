@@ -81,7 +81,16 @@ def send_mumbai_faucet_transaction(address: str, tokens: float):
       token_from_private_key,
     )
 
-    mumbai_w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    try:
+        # Send the transaction
+        txn_hash = mumbai_w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+
+        # Wait for confirmation the transaction was mined
+        mumbai_w3.eth.wait_for_transaction_receipt(txn_hash, timeout=30)
+
+        return True
+    except:
+        return False
 
 
 # Get address balance
