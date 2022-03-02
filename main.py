@@ -184,7 +184,7 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
     log("Mumbai-faucet called")
 
     if valid_address(address):
-        if faucet.get_mumbai_balance() <= tokens:
+        if faucet.get_mumbai_balance() > tokens:
 
             await ctx.send("The transaction has started and can take up to 2 minutes. Please wait until " +
                            "confirmation before requesting more.")
