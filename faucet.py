@@ -14,7 +14,7 @@ mumbai_w3 = Web3(Web3.HTTPProvider(mumbai_rpc_url))
 
 
 def valid_address(address):
-    if len(address) == 42 and re.search('0[xX][0-9a-fA-F]{40}', address):
+    if len(address) == 42 and re.search('0[xX][0-9a-fA-F]{40}', address) and ('[' not in address):
         return True
     return False
 
@@ -72,7 +72,7 @@ def send_mumbai_faucet_transaction(address: str, tokens: float):
     signed_txn = mumbai_w3.eth.account.sign_transaction(dict(
         nonce=nonce,
         gasPrice=25000000000,
-        gas=21337,
+        gas=21000,
         to=address,
         value=int(tokens*1e18),
         data=b'',

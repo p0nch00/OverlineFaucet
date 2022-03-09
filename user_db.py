@@ -54,27 +54,27 @@ def initial_setup():
 
 
 
-def get_user_totals(user_id: str, address: str):
+def get_user_totals(user_id: str, address: str, network: str):
     conn = connection()
     cur = conn.cursor()
-    cur.execute("SELECT UserID, Address, Tokens FROM Transactions")
+    cur.execute("SELECT UserID, Address, Tokens, Network FROM Transactions")
     tokens = 0.0
-    for id, addr, tkns in cur:
-        if str(user_id) == str(id) or addr == address:
+    for id, addr, tkns, ntwk in cur:
+        if (str(user_id) == str(id) or addr == address) and ntwk == network:
             tokens += tkns
     cur.close()
     conn.close()
     return tokens
 
 
-def add_transaction(user_id: str, address: str, tokens: float, timestamp: str):
+def add_transaction(user_id: str, address: str, tokens: float, timestamp: str, network: str):
     conn = connection()
     cur = conn.cursor()
-    cur.execute("SELECT UserID, Address, Tokens FROM Transactions")
+    cur.execute("SELECT UserID, Address, Tokens, Network FROM Transactions")
     found = False
     current_tokens = 0
-    for id, addr, tkns in cur:
-        if user_id == id and addr == address:
+    for id, addr, tkns, ntwk in cur:
+        if user_id == id and addr == address and ntwk == network:
             current_tokens = tkns
             found = True
 
@@ -83,12 +83,12 @@ def add_transaction(user_id: str, address: str, tokens: float, timestamp: str):
         if found:
             command = "UPDATE Transactions " \
                       "SET tokens = " + str(tokens) + ", LastSeen = '" + timestamp + "' " \
-                      "WHERE UserID = '" + user_id + "' AND Address = '" + address + "';"
+                      "WHERE UserID = '" + user_id + "' AND Address = '" + address + "' AND Network = '" + network +"';"
             cur.execute(command)
             conn.commit()
         else:
-            cur.execute("INSERT INTO Transactions VALUES (?, ?, ?, ?, ?)",
-                        (user_id, address, tokens, timestamp, timestamp))
+            cur.execute("INSERT INTO Transactions VALUES (?, ?, ?, ?, ?, ?)",
+                        (user_id, address, tokens, timestamp, timestamp, network))
 
         conn.commit()
         cur.close()
