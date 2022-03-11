@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument, MissingRequiredArgument, CommandInvokeError, MissingRole, MissingAnyRole
 
@@ -11,7 +12,10 @@ from faucet import valid_address
 from logger import log, audit_log, raw_audit_log
 
 token = secrets.DISCORD_TOKEN
-bot = commands.Bot(command_prefix='faucet-')
+intents = discord.Intents.default()
+intents.members = True
+
+bot = commands.Bot(intents=intents, command_prefix='faucet-')
 
 def thanks(addr):
     return "If you found this faucet helpful, please consider returning funds to `" \
@@ -22,8 +26,12 @@ async def on_ready():
     log(f'Logged in as {bot.user} (ID: {bot.user.id})')
     log('--------')
 
+@bot.command(name='version', help='usage: faucet-version')
+@commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
+async def mainnet_faucet(ctx):
+    await ctx.send('v1.0.0')
 
-@bot.command(name='send', help='usage: faucet-send  [address] [tokens')
+@bot.command(name='send', help='usage: faucet-send  [address] [tokens]')
 # @commands.has_any_role(*secrets.MEMBER_DISCORD_ROLES)
 async def mainnet_faucet(ctx, address: str, tokens=0.01):
     # tokens = 0.01
@@ -272,6 +280,30 @@ async def mumbai_faucet_error(ctx, error):
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for this command.')
+
+
+
+@bot.command(name='kick', help='usage: faucet-kick [#]')
+@commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
+async def kick_inactive_users(ctx, num: int):
+    i=0
+
+    users = []
+    for user in list(ctx.guild.members):
+        if i == num:
+            break
+
+        elif len(user.roles) <= 1:
+            #print(user)
+            print(user.roles)
+            users.append(user.name)
+            await ctx.guild.kick(user)
+            i+=1
+
+    #print(i)
+    print(users)
+    #message = "Users without a role: " + str(users)
+    #await ctx.send(message)
 
 
 bot.run(token)
