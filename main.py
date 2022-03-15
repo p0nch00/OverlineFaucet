@@ -12,10 +12,8 @@ from faucet import valid_address
 from logger import log, audit_log, raw_audit_log
 
 token = secrets.DISCORD_TOKEN
-intents = discord.Intents.default()
-intents.members = True
 
-bot = commands.Bot(intents=intents, command_prefix='faucet-')
+bot = commands.Bot(command_prefix='faucet-')
 
 def thanks(addr):
     return "If you found this faucet helpful, please consider returning funds to `" \
@@ -32,7 +30,7 @@ async def mainnet_faucet(ctx):
     await ctx.send('v1.0.0')
 
 @bot.command(name='send', help='usage: faucet-send  [address] [tokens]')
-# @commands.has_any_role(*secrets.MEMBER_DISCORD_ROLES)
+@commands.has_any_role(*secrets.MEMBER_DISCORD_ROLES)
 async def mainnet_faucet(ctx, address: str, tokens=0.01):
     # tokens = 0.01
     audit_log(str(ctx.author), str(ctx.author.id), address, tokens)
@@ -124,7 +122,12 @@ async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
     log('mainnet_faucet_override called')
 
     # if we have a good address
-    if valid_address(address):
+    if address == address.lower():
+        response = "Your address appears to be in the wrong format. Please make sure your address has both upper- " \
+                   "and lower-case letters. This can be found on Polygonscan, or your wallet."
+        raw_audit_log(str(datetime.now()) + ": " + address + " was in the wrong format.")
+
+    elif valid_address(address):
 
         if faucet.get_faucet_balance() > (tokens + 0.01):
             await ctx.send("The transaction has started and can take up to 2 minutes.")
@@ -283,27 +286,26 @@ async def on_command_error(ctx, error):
 
 
 
-@bot.command(name='kick', help='usage: faucet-kick [#]')
-@commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
-async def kick_inactive_users(ctx, num: int):
-    i=0
+# @bot.command(name='kick', help='usage: faucet-kick [#]')
+# @commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
+# async def kick_inactive_users(ctx, num: int):
+#     i=0
+#
+#     users = []
+#     for user in list(ctx.guild.members):
+#         if i == num:
+#             break
+#
+#         elif len(user.roles) <= 1:
+#             #print(user)
+#             #print(user.roles)
+#             users.append(user.name)
+#             await ctx.guild.kick(user)
+#             if i % 100 == 0:
+#                 print(i)
+#             i+=1
 
-    users = []
-    for user in list(ctx.guild.members):
-        if i == num:
-            break
-
-        elif len(user.roles) <= 1:
-            #print(user)
-            print(user.roles)
-            users.append(user.name)
-            await ctx.guild.kick(user)
-            i+=1
-
-    #print(i)
-    print(users)
     #message = "Users without a role: " + str(users)
-    #await ctx.send(message)
 
 
 bot.run(token)

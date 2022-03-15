@@ -60,7 +60,7 @@ def send_faucet_transaction(address: str, tokens: float):
                           " with nonce " + str(nonce) + " and gas " + str(gas/1e9))
             return True
         except Exception as e:
-            raw_audit_log(str(datetime.now()) + ": Sending failed: " + e)
+            raw_audit_log(str(datetime.now()) + ": Sending failed: " + str(e))
     raw_audit_log(str(datetime.now()) + ": Sending failed.")
     return False
 
