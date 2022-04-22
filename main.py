@@ -167,8 +167,8 @@ async def mainnet_faucet_error(ctx, error):
         await ctx.send("usage: `faucet-send  [address]`")
         await vault_checkpoint_channel.send("MissingRequiredArgument: \n" + str(error))
         raise error
-    elif isinstance(error, MissingRole):
-        await ctx.send("Role '" + secrets.MEMBER_DISCORD_ROLES + "' is required to run this command.")
+    elif isinstance(error, MissingAnyRole):
+        await ctx.send("You are missing at least one of the required roles: '" + secrets.MEMBER_DISCORD_ROLES + "'.")
         await vault_checkpoint_channel.send("MissingRole: \n" + str(error))
         raise error
     else:
@@ -274,7 +274,7 @@ async def mumbai_faucet_error(ctx, error):
                        "Please make sure `tokens` is a number.")
         raise error
     elif isinstance(error, MissingAnyRole):
-        await ctx.send("Role '" + ", ".join(secrets.DEVELOPER_DISCORD_ROLES) + "' is required to run this command.")
+        await ctx.send("You are missing at least one of the required roles: '" + ", ".join(secrets.DEVELOPER_DISCORD_ROLES) + "'.")
         raise error
     elif isinstance(error, BadArgument):
         await ctx.send("usage: `faucet-mumbai  [address]  [tokens]`. \n"
