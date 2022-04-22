@@ -1,10 +1,11 @@
 import datetime
 from math import floor
 import requests
-from logger import log
+from logger import log, raw_audit_log
 import secrets
 
 import mariadb
+
 
 # Connect to MariaDB Platform
 def connection():
@@ -21,7 +22,7 @@ def connection():
 
 
     except mariadb.Error as e:
-        log(f"Error connecting to MariaDB Platform: {e}")
+        raw_audit_log(f"Error connecting to MariaDB Platform: {e}")
         exit()
 
 
@@ -34,24 +35,22 @@ def initial_setup():
         # cur.execute("DROP TABLE Blacklisted;")
 
         cur.execute("CREATE TABLE Transactions(UserID VARCHAR(20), "
-                                              "Address VARCHAR(42), "
-                                              "Tokens FLOAT(10,4), "
-                                              "FirstSeen VARCHAR(30), "
-                                              "LastSeen VARCHAR(30));")
+                    "Address VARCHAR(42), "
+                    "Tokens FLOAT(10,4), "
+                    "FirstSeen VARCHAR(30), "
+                    "LastSeen VARCHAR(30));")
 
         cur.execute("CREATE TABLE Users(UserID VARCHAR(20), "
-                                       "Username varchar(50));")
+                    "Username varchar(50));")
 
         cur.execute("CREATE TABLE Blacklisted(UserID VARCHAR(20), "
-                                             "Address VARCHAR(42), "
-                                             "Blacklisted BOOLEAN, "
-                                             "Imported BOOLEAN);")
+                    "Address VARCHAR(42), "
+                    "Blacklisted BOOLEAN, "
+                    "Imported BOOLEAN);")
         cur.close()
         conn.close()
     except mariadb.Error as e:
-        log(f"Error: {e}")
-
-
+        raw_audit_log(f"Error: {e}")
 
 
 def get_user_totals(user_id: str, address: str, network: str):
@@ -83,7 +82,7 @@ def add_transaction(user_id: str, address: str, tokens: float, timestamp: str, n
         if found:
             command = "UPDATE Transactions " \
                       "SET tokens = " + str(tokens) + ", LastSeen = '" + timestamp + "' " \
-                      "WHERE UserID = '" + user_id + "' AND Address = '" + address + "' AND Network = '" + network +"';"
+                      "WHERE UserID = '" + user_id + "' AND Address = '" + address + "' AND Network = '" + network + "';"
             cur.execute(command)
             conn.commit()
         else:
@@ -95,7 +94,7 @@ def add_transaction(user_id: str, address: str, tokens: float, timestamp: str, n
         conn.close()
         return True
     except mariadb.Error as e:
-        log(f"Error: {e}")
+        raw_audit_log(f"Error: {e}")
         conn.close()
         return False
 
@@ -118,7 +117,7 @@ def add_user(user_name: str, user_id: str):
         conn.close()
         return True
     except mariadb.Error as e:
-        log(f"Error: {e}")
+        raw_audit_log(f"Error: {e}")
         return False
 
 
@@ -131,9 +130,8 @@ def check_if_blacklisted(user: str, address: str):
         if user_id[0] == user:
             add_blacklisted_user(user, address)
             conn.close()
-            log(str(user) + " is on the blacklist.")
+            raw_audit_log(str(user) + " is on the blacklist.")
             return True
-
 
     response = requests.get("https://api.polygonscan.com/api" +
                             "?module=account" +
@@ -158,7 +156,7 @@ def check_if_blacklisted(user: str, address: str):
         if addr[0] in addresses:
             add_blacklisted_address(user, address)
             conn.close()
-            log(str(address) + " is on the blacklist.")
+            raw_audit_log(str(address) + " is on the blacklist.")
             return True
 
     cur.execute("SELECT Address FROM Transactions")
@@ -167,11 +165,11 @@ def check_if_blacklisted(user: str, address: str):
     for addr in cur:
         if addr[0] in addresses:
             conn.close()
-            log(address + " has a connection to " + addr[0]+".")
+            raw_audit_log(address + " has a connection to " + addr[0] + ".")
             return True
 
     conn.close()
-    log(str(user) + " and " + str(address) + " not found in the blacklist.")
+    raw_audit_log(str(user) + " and " + str(address) + " not found in the blacklist.")
     return False
 
 
@@ -243,12 +241,12 @@ def get_if_existing_account(address: str):
                             "&apikey=" + secrets.POLYGONSCAN_API_KEY)
     erc_721_transactions = len(response.json()['result'])
 
-    log(address + " has " + str(normal_transactions) + " transactions and " +
-        str(erc_20_transactions) + " erc-20 transactions.")
+    raw_audit_log(address + " has " + str(normal_transactions) + " transactions and " +
+                  str(erc_20_transactions) + " erc-20 transactions.")
 
     if normal_transactions == 1 and erc_20_transactions == 0 and erc_721_transactions == 0 and \
-        normal_tx_content[0]['from'] == "0x8c5a6c767ee7084a8c656acd457da9561163ae7e":
-        log(address + " is a matic.supply scammer.")
+            normal_tx_content[0]['from'] == "0x8c5a6c767ee7084a8c656acd457da9561163ae7e":
+        raw_audit_log(address + " is a matic.supply scammer.")
         add_blacklisted_address("", address)
         return False
 

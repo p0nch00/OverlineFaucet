@@ -107,7 +107,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
                                     "Mainnet")
             faucet_balance = faucet.get_faucet_balance()
             response = "**Sent " + str(tokens) + " Matic to " + address[:6] + "..." + \
-                       address[-4:] + ".** The faucet now has " + str(faucet_balance) + " Matic left. \n" + \
+                       address[-4:] + ".**\n" + \
                        thanks(faucet_address)
 
         else:
@@ -229,9 +229,9 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
         if faucet.get_mumbai_balance() > tokens:
             # if the user or address has already received > max Matic, deny
             if user_db.get_user_totals(ctx.author.id, address, "Mumbai") >= secrets.MAX_MUMBAI_TOKENS_REQUESTED:
-                response = "You have already requested the maximum allowed, dropping down to 0.1 Matic."
+                response = "You have already requested the maximum allowed, dropping down to 0.5 Matic."
                 await ctx.send(response)
-                tokens = 0.1
+                tokens = 0.5
 
             await ctx.send("The transaction has started and can take up to 2 minutes. Please wait until " +
                            "confirmation before requesting more.")
@@ -244,7 +244,7 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
                                         datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), "Mumbai")
                 faucet_balance = faucet.get_mumbai_balance()
                 response = "**Sent " + str(tokens) + " test Matic to " + address[:6] + "..." + \
-                           address[-4:] + ".** The faucet now has " + str(faucet_balance) + " test Matic left."
+                           address[-4:] + ".**"
 
             else:
                 response = "The bot cannot confirm the transaction went through, please check on Polygonscan. " \
@@ -259,6 +259,38 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
     log("Mumbai-faucet: " + response)
     await ctx.send(response)
     return
+
+
+@bot.command(name='mumbai-override', help='usage: faucet-mumbai-override [address] [tokens]')
+@commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
+async def mumbai_faucet_override(ctx, address: str, tokens=1):
+    print("here")
+    log('mumbai_faucet_override called')
+
+    # if we have a good address
+    if address == address.lower():
+        response = "Your address appears to be in the wrong format. Please make sure your address has both upper- " \
+                   "and lower-case letters. This can be found on Polygonscan, or your wallet."
+        raw_audit_log(str(datetime.now()) + ": " + address + " was in the wrong format.")
+
+    elif valid_address(address):
+
+        if faucet.get_mumbai_balance() > (tokens + 0.01):
+            await ctx.send("The transaction has started and can take up to 2 minutes.")
+
+            success = faucet.send_mumbai_faucet_transaction(address, tokens)
+            if success:
+                response = "**Sent " + str(tokens) + " Matic to " + address[:4] + "..." + address[-2:] + \
+                           ". **The faucet now has " + str(faucet.get_faucet_balance()) + " Matic left."
+            else:
+                response = "There was an error and <@712863455467667526> has been notified."
+        else:
+            response = "The faucet does not have enough funds. Please refill. \n" \
+                       "`0xD8a3dfCae8348E6C52b929c8E50217AD7e4cCa68`"
+    else:
+        response = "usage: `faucet  send  [address]  [tokens]`. \n" \
+                   "Please enter a valid address."
+    await ctx.send(response)
 
 
 @bot.command(name='mumbai-balance', help='usage: faucet-mumbai-balance')
