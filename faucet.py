@@ -21,7 +21,7 @@ def valid_address(address):
 
 # Send a transaction to the requestor
 def send_faucet_transaction(address: str, tokens: float):
-    #Get faucet address and faucet's private key from secrets file
+    # Get faucet address and faucet's private key from secrets file
     token_from, token_from_private_key = secrets.get_guild_wallet()
 
     # Token input is in Matic, we need to add the additional 18 decimal places

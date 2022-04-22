@@ -1,6 +1,5 @@
 from datetime import datetime
 
-import discord
 from discord.ext import commands
 from discord.ext.commands import BadArgument, MissingRequiredArgument, CommandInvokeError, MissingRole, MissingAnyRole
 
@@ -15,19 +14,23 @@ token = secrets.DISCORD_TOKEN
 
 bot = commands.Bot(command_prefix='faucet-')
 
+
 def thanks(addr):
     return "If you found this faucet helpful, please consider returning funds to `" \
-                  + addr + "`. It will help keep the faucet running. Thank you!"
+           + addr + "`. It will help keep the faucet running. Thank you!"
+
 
 @bot.event
 async def on_ready():
     log(f'Logged in as {bot.user} (ID: {bot.user.id})')
     log('--------')
 
+
 @bot.command(name='version', help='usage: faucet-version')
 @commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
 async def mainnet_faucet(ctx):
     await ctx.send('v1.0.0')
+
 
 @bot.command(name='send', help='usage: faucet-send  [address] [tokens]')
 @commands.has_any_role(*secrets.MEMBER_DISCORD_ROLES)
@@ -35,7 +38,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
     # tokens = 0.01
     audit_log(str(ctx.author), str(ctx.author.id), address, tokens)
     faucet_address, x = secrets.get_guild_wallet()
-    x=""
+    x = ""
     user_db.check_if_blacklisted(ctx.author.id, address)
 
     # if user's token request is not between 0.04 and 0.001, deny
@@ -84,7 +87,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
     elif address == address.lower():
         response = "Your address appears to be in the wrong format. Please make sure your address has both upper- " \
                    "and lower-case letters. This can be found on Polygonscan, or your wallet."
-        raw_audit_log(str(datetime.now()) + ": "+address+" was in the wrong format.")
+        raw_audit_log(str(datetime.now()) + ": " + address + " was in the wrong format.")
 
     elif user_db.check_if_blacklisted(ctx.author.id, address):
         response = "Something went wrong. cc:<@712863455467667526>"
@@ -100,7 +103,8 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
         # success = True
         if success:
             user_db.add_user(str(ctx.author.id), str(ctx.author))
-            user_db.add_transaction(str(ctx.author.id), address, tokens, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), "Mainnet")
+            user_db.add_transaction(str(ctx.author.id), address, tokens, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+                                    "Mainnet")
             faucet_balance = faucet.get_faucet_balance()
             response = "**Sent " + str(tokens) + " Matic to " + address[:6] + "..." + \
                        address[-4:] + ".** The faucet now has " + str(faucet_balance) + " Matic left. \n" + \
@@ -134,8 +138,8 @@ async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
 
             success = faucet.send_faucet_transaction(address, tokens)
             if success:
-                response = "**Sent " + str(tokens) + " Matic to " + address[:4] + "..." + address[-2:] +  \
-                            ". **The faucet now has " + str(faucet.get_faucet_balance()) + " Matic left."
+                response = "**Sent " + str(tokens) + " Matic to " + address[:4] + "..." + address[-2:] + \
+                           ". **The faucet now has " + str(faucet.get_faucet_balance()) + " Matic left."
             else:
                 response = "There was an error and <@712863455467667526> has been notified."
         else:
@@ -149,20 +153,26 @@ async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
 
 @mainnet_faucet.error
 async def mainnet_faucet_error(ctx, error):
+    vault_checkpoint_channel = bot.get_channel(id=secrets.VAULT_CHECKPOINT_CHANNEL)
     if isinstance(error, CommandInvokeError):
         await ctx.send("There was error that <@712863455467667526> needs to fix. Please try again later.")
+        await vault_checkpoint_channel.send("CommandInvokeError: \n" + str(error))
         raise error
     elif isinstance(error, BadArgument):
         await ctx.send("usage: `faucet-send  [address]`. \n"
                        "Please enter a valid address.")
+        await vault_checkpoint_channel.send("BadArgument: \n" + str(error))
         raise error
     elif isinstance(error, MissingRequiredArgument):
         await ctx.send("usage: `faucet-send  [address]`")
+        await vault_checkpoint_channel.send("MissingRequiredArgument: \n" + str(error))
         raise error
     elif isinstance(error, MissingRole):
         await ctx.send("Role '" + secrets.MEMBER_DISCORD_ROLES + "' is required to run this command.")
+        await vault_checkpoint_channel.send("MissingRole: \n" + str(error))
         raise error
     else:
+        await vault_checkpoint_channel.send("Else: \n" + str(error))
         raise error
 
 
@@ -174,8 +184,9 @@ async def get_mainnet_balance(ctx):
     try:
         balance = faucet.get_faucet_balance()
         response = "The faucet has " + str(balance) + " Matic. \n" \
-                   "To contribute, you can send Matic to `" + faucet_address + "`."
-        raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) + ") checked the balance.")
+                                                      "To contribute, you can send Matic to `" + faucet_address + "`."
+        raw_audit_log(
+            str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) + ") checked the balance.")
         await ctx.send(response)
     except Exception as e:
         log(e)
@@ -237,7 +248,6 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
             response = "The faucet does not have enough funds. Please enter a lower amount or add more to " \
                        "`0xD8a3dfCae8348E6C52b929c8E50217AD7e4cCa68`"
 
-
     else:
         response = "usage: `faucet-mumbai  [address]  [tokens]`. \n" \
                    "Please enter a valid address."
@@ -249,7 +259,6 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
 @bot.command(name='mumbai-balance', help='usage: faucet-mumbai-balance')
 @commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
 async def get_mumbai_balance(ctx):
-
     try:
         balance = faucet.get_mumbai_balance()
         response = "The faucet has " + str(balance) + " Maticmum"
@@ -283,29 +292,6 @@ async def mumbai_faucet_error(ctx, error):
 async def on_command_error(ctx, error):
     if isinstance(error, commands.errors.CheckFailure):
         await ctx.send('You do not have the correct role for this command.')
-
-
-
-# @bot.command(name='kick', help='usage: faucet-kick [#]')
-# @commands.has_any_role(*secrets.ADMIN_DISCORD_ROLES)
-# async def kick_inactive_users(ctx, num: int):
-#     i=0
-#
-#     users = []
-#     for user in list(ctx.guild.members):
-#         if i == num:
-#             break
-#
-#         elif len(user.roles) <= 1:
-#             #print(user)
-#             #print(user.roles)
-#             users.append(user.name)
-#             await ctx.guild.kick(user)
-#             if i % 100 == 0:
-#                 print(i)
-#             i+=1
-
-    #message = "Users without a role: " + str(users)
 
 
 bot.run(token)
