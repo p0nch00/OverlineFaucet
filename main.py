@@ -154,6 +154,11 @@ async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
 @mainnet_faucet.error
 async def mainnet_faucet_error(ctx, error):
     vault_checkpoint_channel = bot.get_channel(id=secrets.VAULT_CHECKPOINT_CHANNEL)
+    if str(error) == "Command raised an exception: TypeError: string indices must be integers":
+        await ctx.send("usage: `faucet-send  [address]`. \n"
+                       "Please do not use brackets when entering an address.")
+        await vault_checkpoint_channel.send("CommandInvokeError: \n" + str(error))
+        raise error
     if isinstance(error, CommandInvokeError):
         await ctx.send("There was error that <@712863455467667526> needs to fix. Please try again later.")
         await vault_checkpoint_channel.send("CommandInvokeError: \n" + str(error))
@@ -168,7 +173,7 @@ async def mainnet_faucet_error(ctx, error):
         await vault_checkpoint_channel.send("MissingRequiredArgument: \n" + str(error))
         raise error
     elif isinstance(error, MissingAnyRole):
-        await ctx.send("You are missing at least one of the required roles: '" + secrets.MEMBER_DISCORD_ROLES + "'.")
+        await ctx.send("You are missing at least one of the required roles: '" + ", ".join(secrets.MEMBER_DISCORD_ROLES) + "'.")
         await vault_checkpoint_channel.send("MissingRole: \n" + str(error))
         raise error
     else:
