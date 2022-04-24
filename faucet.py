@@ -12,7 +12,6 @@ w3 = Web3(Web3.HTTPProvider(rpc_url))
 mumbai_rpc_url = "https://rpc-mumbai.maticvigil.com"
 mumbai_w3 = Web3(Web3.HTTPProvider(mumbai_rpc_url))
 
-
 def valid_address(address):
     if len(address) == 42 and re.search('0[xX][0-9a-fA-F]{40}', address) and ('[' not in address):
         return True
