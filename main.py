@@ -66,7 +66,6 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) +
                       ") requested too many tokens.")
 
-
     # if we do not have a good address
     elif not valid_address(address):
         response = "usage: `faucet  send [address] [tokens]`. \n" \
@@ -227,32 +226,32 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
     # if we passed all the above checks, proceed
     elif valid_address(address):
 
-        if faucet.get_mumbai_balance() > tokens:
-            # if the user or address has already received > max Matic, deny
-            if user_db.get_user_totals(ctx.author.id, address, "Mumbai") >= secrets.MAX_MUMBAI_TOKENS_REQUESTED:
-                response = "You have already requested the maximum allowed, dropping down to 0.5 Matic."
-                await ctx.send(response)
-                tokens = 0.5
+        #if faucet.get_mumbai_balance() > tokens:
+        # if the user or address has already received > max Matic, deny
+        if user_db.get_user_totals(ctx.author.id, address, "Mumbai") >= secrets.MAX_MUMBAI_TOKENS_REQUESTED:
+            response = "You have already requested the maximum allowed, dropping down to 0.5 Matic."
+            await ctx.send(response)
+            tokens = 0.5
 
-            await ctx.send("The transaction has started and can take up to 2 minutes. Please wait until " +
-                           "confirmation before requesting more.")
+        await ctx.send("The transaction has started and can take up to 2 minutes. Please wait until " +
+                       "confirmation before requesting more.")
 
-            success = faucet.send_mumbai_faucet_transaction(address, tokens)
+        success = faucet.send_mumbai_faucet_transaction(address, tokens)
 
-            # success = True
-            if success:
-                user_db.add_transaction(str(ctx.author.id), address, tokens,
-                                        datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), "Mumbai")
-                faucet_balance = faucet.get_mumbai_balance()
-                response = "**Sent " + str(tokens) + " test Matic to " + address[:6] + "..." + \
-                           address[-4:] + ".**"
+        # success = True
+        if success:
+            user_db.add_transaction(str(ctx.author.id), address, tokens,
+                                    datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), "Mumbai")
+            faucet_balance = faucet.get_mumbai_balance()
+            response = "**Sent " + str(tokens) + " test Matic to " + address[:6] + "..." + \
+                       address[-4:] + ".**"
 
-            else:
-                response = "The bot cannot confirm the transaction went through, please check on Polygonscan. " \
-                           "If still not received, try again. cc:<@712863455467667526>"
         else:
-            response = "The faucet does not have enough funds. Please enter a lower amount or add more to " \
-                       "`0xD8a3dfCae8348E6C52b929c8E50217AD7e4cCa68`"
+            response = "The bot cannot confirm the transaction went through, please check on Polygonscan. " \
+                       "If still not received, try again. cc:<@712863455467667526>"
+        #else:
+        #    response = "The faucet does not have enough funds. Please enter a lower amount or add more to " \
+        #               "`0xD8a3dfCae8348E6C52b929c8E50217AD7e4cCa68`"
 
     else:
         response = "usage: `faucet-mumbai  [address]  [tokens]`. \n" \
@@ -308,8 +307,7 @@ async def get_mumbai_balance(ctx):
 @mumbai_faucet.error
 async def mumbai_faucet_error(ctx, error):
     if isinstance(error, CommandInvokeError):
-        await ctx.send("usage: `faucet-mumbai  [address]  [tokens]`. \n"
-                       "Please make sure `tokens` is a number.")
+        await ctx.send("There was an issue, possibly with the RPC. cc:<@712863455467667526>")
         raise error
     elif isinstance(error, MissingAnyRole):
         await ctx.send("You are missing at least one of the required roles: '" + ", ".join(secrets.DEVELOPER_DISCORD_ROLES) + "'.")

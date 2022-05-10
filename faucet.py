@@ -9,8 +9,10 @@ from web3 import Web3
 rpc_url = "https://polygon-rpc.com"
 w3 = Web3(Web3.HTTPProvider(rpc_url))
 
-mumbai_rpc_url = "https://rpc-mumbai.maticvigil.com"
+# mumbai_rpc_url = "https://rpc-mumbai.maticvigil.com/v1/79315e5d55714f504d1412863718c72c5f344325"
+mumbai_rpc_url = "https://rpc-mumbai.matic.today"
 mumbai_w3 = Web3(Web3.HTTPProvider(mumbai_rpc_url))
+
 
 def valid_address(address):
     if len(address) == 42 and re.search('0[xX][0-9a-fA-F]{40}', address) and ('[' not in address):
@@ -117,6 +119,7 @@ def get_mumbai_balance():
     token_from, token_from_private_key = secrets.get_guild_wallet()
 
     try:
+        print(mumbai_w3.eth.getBalance(token_from))
         response = mumbai_w3.eth.getBalance(token_from)/1e18
     except Exception as e:
         response = e
