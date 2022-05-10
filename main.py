@@ -23,7 +23,7 @@ def thanks(addr):
 @bot.event
 async def on_ready():
     log(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    log('--------')
+    log('-----_---')
 
 
 @bot.command(name='version', help='usage: faucet-version')

@@ -9,7 +9,7 @@ from web3 import Web3
 rpc_url = "https://polygon-rpc.com"
 w3 = Web3(Web3.HTTPProvider(rpc_url))
 
-# mumbai_rpc_url = "https://rpc-mumbai.maticvigil.com/v1/79315e5d55714f504d1412863718c72c5f344325"
+mumbai_rpc_url = "https://rpc-mumbai.maticvigil.com/v1/79315e5d55714f504d1412863718c72c5f344325"
 mumbai_rpc_url = "https://rpc-mumbai.matic.today"
 mumbai_w3 = Web3(Web3.HTTPProvider(mumbai_rpc_url))
 
