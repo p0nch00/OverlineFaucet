@@ -10,7 +10,7 @@ rpc_url = "https://polygon-rpc.com"
 w3 = Web3(Web3.HTTPProvider(rpc_url))
 
 mumbai_rpc_url = "https://rpc-mumbai.maticvigil.com/v1/79315e5d55714f504d1412863718c72c5f344325"
-mumbai_rpc_url = "https://rpc-mumbai.matic.today"
+mumbai_rpc_url = "https://rpc-mumbai.maticvigil.com"
 mumbai_w3 = Web3(Web3.HTTPProvider(mumbai_rpc_url))
 
 
@@ -90,7 +90,8 @@ def send_mumbai_faucet_transaction(address: str, tokens: float):
         mumbai_w3.eth.wait_for_transaction_receipt(txn_hash, timeout=30)
 
         return True
-    except:
+    except Exception as e:
+        raw_audit_log(str(datetime.now()) + ": Sending failed: " + str(e))
         return False
 
 
