@@ -5,6 +5,9 @@ from discord.ext.commands import BadArgument, MissingRequiredArgument, CommandIn
 
 import faucet
 import user_db
+import configparser
+import argparse
+import json
 from faucet import valid_address
 
 from logger import log, audit_log, raw_audit_log
@@ -12,15 +15,17 @@ from logger import log, audit_log, raw_audit_log
 # Load config
 c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
+argparser = argparse.ArgumentParser()
 
 MAX_TOKENS_REQUESTED = float(c["TOKEN COUNTS"]["MAX_TOKENS_REQUESTED"])
 MAX_MUMBAI_TOKENS_REQUESTED = float(c["TOKEN COUNTS"]["MAX_MUMBAI_TOKENS_REQUESTED"])
 FAUCET_ADDRESS = str(c["FAUCET"]["address"])
 DISCORD_TOKEN = str(c["DISCORD"]["token"])
-MEMBER_DISCORD_ROLES = c["DISCORD"]["member_roles"]
-DEVELOPER_DISCORD_ROLES = c["DISCORD"]["developer_roles"]
-ADMIN_DISCORD_ROLES = c["DISCORD"]["admin_roles"]
-ERROR_MESSAGE_CHANNEL = str(c["DISCORD"]["error_channel"])
+MEMBER_DISCORD_ROLES = json.loads(c["DISCORD"]["member_roles"])
+DEVELOPER_DISCORD_ROLES = json.loads(c["DISCORD"]["developer_roles"])
+ADMIN_DISCORD_ROLES = json.loads(c["DISCORD"]["admin_roles"])
+ERROR_MESSAGE_CHANNEL = int(c["DISCORD"]["error_channel"])
+DB_CHECK = True if str(c["DATABASE"]["db_check"]).lower() == "true" else False
 
 token = DISCORD_TOKEN
 
@@ -35,7 +40,7 @@ def thanks(addr):
 @bot.event
 async def on_ready():
     log(f'Logged in as {bot.user} (ID: {bot.user.id})')
-    log('-----_---')
+    log('---------')
 
 
 @bot.command(name='version', help='usage: faucet-version')
@@ -49,7 +54,6 @@ async def mainnet_faucet(ctx):
 async def mainnet_faucet(ctx, address: str, tokens=0.01):
     # tokens = 0.01
     audit_log(str(ctx.author), str(ctx.author.id), address, tokens)
-    user_db.check_if_blacklisted(ctx.author.id, address)
 
     # if user's token request is not between 0.04 and 0.001, deny
     if tokens > MAX_TOKENS_REQUESTED:
@@ -57,6 +61,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) +
                       ") requested too many tokens.")
 
+    # if token request is too small
     elif tokens < 0.001:
         response = "Please request at least 0.001 Matic."
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) +
@@ -69,7 +74,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
                       str(faucet.get_faucet_balance()) + " tokens in their wallet.")
 
     # if the user or address has already received > 0.03 Matic, deny
-    elif user_db.get_user_totals(ctx.author.id, address, "Mainnet") >= MAX_TOKENS_REQUESTED:
+    elif DB_CHECK and (user_db.get_user_totals(ctx.author.id, address, "Mainnet") >= MAX_TOKENS_REQUESTED):
         log(str(tokens) + " excess tokens requested by " + str(ctx.author.id) + " author and " + str(
             address) + " address.")
         response = "You have already requested the maximum allowed."
@@ -85,7 +90,7 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
 
     # if the address has 0 transactions, deny
     elif not user_db.get_if_existing_account(address):
-        response = "Addresses are required to have funds in the wallet to request."
+        response = "Address must have activity/previous transactions before requesting."
         raw_audit_log(str(datetime.now()) + ": " + str(ctx.author) + "(" + str(ctx.author.id) + ") has 0 transactions.")
 
     # if the faucet does not have enough funds, deny
@@ -99,8 +104,8 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
                    "and lower-case letters. This can be found on Polygonscan, or your wallet."
         raw_audit_log(str(datetime.now()) + ": " + address + " was in the wrong format.")
 
-    elif user_db.check_if_blacklisted(ctx.author.id, address):
-        response = "Something went wrong. cc:<@712863455467667526>"
+    elif DB_CHECK and user_db.check_if_blacklisted(ctx.author.id, address):
+        response = "User blacklisted."
         raw_audit_log(str(datetime.now()) + ": " + address + " is on the blacklist.")
 
     # if we passed all the above checks, proceed
@@ -111,16 +116,17 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
         success = faucet.send_faucet_transaction(address, tokens)
 
         if success:
-            user_db.add_user(str(ctx.author.id), str(ctx.author))
-            user_db.add_transaction(str(ctx.author.id), address, tokens, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-                                    "Mainnet")
+            if DB_CHECK:
+                user_db.add_user(str(ctx.author.id), str(ctx.author))
+                user_db.add_transaction(str(ctx.author.id), address, tokens, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
+                                        "Mainnet")
             response = "**Sent " + str(tokens) + " Matic to " + address[:6] + "..." + \
                        address[-4:] + ".**\n" + \
                        thanks(FAUCET_ADDRESS)
 
         else:
             response = "The bot cannot confirm the transaction went through, please check on Polygonscan. " \
-                       "If still not received, try again. cc:<@712863455467667526>"
+                       "If still not received, try again."
 
     # embed = discord.Embed()
     # embed.description = response
@@ -149,10 +155,9 @@ async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
                 response = "**Sent " + str(tokens) + " Matic to " + address[:4] + "..." + address[-2:] + \
                            ". **The faucet now has " + str(faucet.get_faucet_balance()) + " Matic left."
             else:
-                response = "There was an error and <@712863455467667526> has been notified."
+                response = "There was an error, please try again later or alert an admin."
         else:
-            response = "The faucet does not have enough funds. Please refill. \n" \
-                       "`0xD8a3dfCae8348E6C52b929c8E50217AD7e4cCa68`"
+            response = "The faucet does not have enough funds. Please refill. \n`{FAUCET_ADDRESS}`"
     else:
         response = "usage: `faucet  send  [address]  [tokens]`. \n" \
                    "Please enter a valid address."
@@ -161,32 +166,32 @@ async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
 
 @mainnet_faucet.error
 async def mainnet_faucet_error(ctx, error):
-    vault_checkpoint_channel = bot.get_channel(id=VAULT_CHECKPOINT_CHANNEL)
+    error_channel = bot.get_channel(id=ERROR_MESSAGE_CHANNEL)
     if str(error) == "Command raised an exception: TypeError: string indices must be integers":
         await ctx.send("usage: `faucet-send  [address]`. \n"
                        "Please do not use brackets when entering an address.")
-        await vault_checkpoint_channel.send("CommandInvokeError: \n" + str(error))
+        await error_channel.send("CommandInvokeError: \n" + str(error))
         raise error
     if isinstance(error, CommandInvokeError):
         await ctx.send("There was error that <@712863455467667526> needs to fix. Please try again later.")
-        await vault_checkpoint_channel.send("CommandInvokeError: \n" + str(error))
+        await error_channel.send("CommandInvokeError: \n" + str(error))
         raise error
     elif isinstance(error, BadArgument):
         await ctx.send("usage: `faucet-send  [address]`. \n"
                        "Please enter a valid address.")
-        await vault_checkpoint_channel.send("BadArgument: \n" + str(error))
+        await error_channel.send("BadArgument: \n" + str(error))
         raise error
     elif isinstance(error, MissingRequiredArgument):
         await ctx.send("usage: `faucet-send  [address]`")
-        await vault_checkpoint_channel.send("MissingRequiredArgument: \n" + str(error))
+        await error_channel.send("MissingRequiredArgument: \n" + str(error))
         raise error
     elif isinstance(error, MissingAnyRole):
         await ctx.send(
             "You are missing at least one of the required roles: '" + ", ".join(MEMBER_DISCORD_ROLES) + "'.")
-        await vault_checkpoint_channel.send("MissingRole: \n" + str(error))
+        await error_channel.send("MissingRole: \n" + str(error))
         raise error
     else:
-        await vault_checkpoint_channel.send("Else: \n" + str(error))
+        await error_channel.send("Else: \n" + str(error))
         raise error
 
 
@@ -207,6 +212,8 @@ async def get_mainnet_balance(ctx):
 @bot.command(name='blacklist', help='usage: faucet-blacklist [address]')
 @commands.has_any_role(*ADMIN_DISCORD_ROLES)
 async def blacklist_address(ctx, address: str):
+    if not DB_CHECK:
+        await ctx.send("Database checks not enabled.")
     await ctx.send(user_db.add_blacklisted_address(ctx.author.id, address))
     log(address + " blacklisted.")
     return
@@ -214,10 +221,10 @@ async def blacklist_address(ctx, address: str):
 
 @bot.command(name='mumbai', help='usage: faucet-mumbai [address] [tokens]')
 @commands.has_any_role(*DEVELOPER_DISCORD_ROLES)
-async def mumbai_faucet(ctx, address: str, tokens=1.0):
+async def mumbai_faucet(ctx, address: str, tokens=MAX_MUMBAI_TOKENS_REQUESTED):
     log("Mumbai-faucet called")
 
-    # if user's token request is not between 0.04 and 0.001, deny
+    # if user's requests too many tokens, deny
     if tokens > MAX_MUMBAI_TOKENS_REQUESTED:
         response = "Please only request up to " + str(MAX_MUMBAI_TOKENS_REQUESTED) + " Matic at a time."
 
@@ -226,8 +233,8 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
                    "and lower-case letters. This can be found on Polygonscan, or your wallet."
         raw_audit_log(str(datetime.now()) + ": " + address + " was in the wrong format.")
 
-    elif user_db.check_if_blacklisted(ctx.author.id, address):
-        response = "Something went wrong. cc:<@712863455467667526>"
+    elif DB_CHECK and user_db.check_if_blacklisted(ctx.author.id, address):
+        response = "User blacklisted."
         raw_audit_log(str(datetime.now()) + ": " + address + " is on the blacklist.")
 
     # if we passed all the above checks, proceed
@@ -235,7 +242,7 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
 
         # if faucet.get_mumbai_balance() > tokens:
         # if the user or address has already received > max Matic, deny
-        if user_db.get_user_totals(ctx.author.id, address, "Mumbai") >= MAX_MUMBAI_TOKENS_REQUESTED:
+        if DB_CHECK and (user_db.get_user_totals(ctx.author.id, address, "Mumbai") >= MAX_MUMBAI_TOKENS_REQUESTED):
             response = "You have already requested the maximum allowed, dropping down to 0.5 Matic."
             await ctx.send(response)
             tokens = 0.5
@@ -247,17 +254,15 @@ async def mumbai_faucet(ctx, address: str, tokens=1.0):
 
         # success = True
         if success:
-            user_db.add_transaction(str(ctx.author.id), address, tokens,
+            if DB_CHECK:
+                user_db.add_transaction(str(ctx.author.id), address, tokens,
                                     datetime.now().strftime("%m/%d/%Y, %H:%M:%S"), "Mumbai")
             response = "**Sent " + str(tokens) + " test Matic to " + address[:6] + "..." + \
                        address[-4:] + ".**"
 
         else:
             response = "The bot cannot confirm the transaction went through, please check on Polygonscan. " \
-                       "If still not received, try again. cc:<@712863455467667526>"
-        # else:
-        #    response = "The faucet does not have enough funds. Please enter a lower amount or add more to " \
-        #               "`0xD8a3dfCae8348E6C52b929c8E50217AD7e4cCa68`"
+                       "If still not received, try again."
 
     else:
         response = "usage: `faucet-mumbai  [address]  [tokens]`. \n" \
@@ -289,10 +294,9 @@ async def mumbai_faucet_override(ctx, address: str, tokens=1):
                 response = "**Sent " + str(tokens) + " Matic to " + address[:4] + "..." + address[-2:] + \
                            ". **The faucet now has " + str(faucet.get_faucet_balance()) + " Matic left."
             else:
-                response = "There was an error and <@712863455467667526> has been notified."
+                response = "There was an error."
         else:
-            response = "The faucet does not have enough funds. Please refill. \n" \
-                       "`0xD8a3dfCae8348E6C52b929c8E50217AD7e4cCa68`"
+            response = f"The faucet does not have enough funds. Please refill.\n`{FAUCET_ADDRESS}`"
     else:
         response = "usage: `faucet  send  [address]  [tokens]`. \n" \
                    "Please enter a valid address."
@@ -313,7 +317,7 @@ async def get_mumbai_balance(ctx):
 @mumbai_faucet.error
 async def mumbai_faucet_error(ctx, error):
     if isinstance(error, CommandInvokeError):
-        await ctx.send("There was an issue, possibly with the RPC. cc:<@712863455467667526>")
+        await ctx.send("There was an issue, possibly with the RPC.")
         raise error
     elif isinstance(error, MissingAnyRole):
         await ctx.send(

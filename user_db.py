@@ -1,6 +1,7 @@
 import datetime
 from math import floor
 import requests
+import configparser
 from logger import log, raw_audit_log
 
 import mariadb
@@ -10,12 +11,14 @@ c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
 
 FAUCET_ADDRESS = str(c["FAUCET"]["address"])
+POLYGONSCAN_API_KEY = str(c["GENERAL"]["api_key"])
+DB_CHECK = True if str(c["DATABASE"]["db_check"]).lower() == "true" else False
 
-DB_USER = str(c["DATABASE"]["user"])
-DB_PASSWORD = str(c["DATABASE"]["password"])
-DB_HOST = str(c["DATABASE"]["host"])
-DB_NAME = str(c["DATABASE"]["name"])
-POLYGONSCAN_API_KEY = str(c["DATABASE"]["api_key"])
+if DB_CHECK:
+    DB_USER = str(c["DATABASE"]["user"])
+    DB_PASSWORD = str(c["DATABASE"]["password"])
+    DB_HOST = str(c["DATABASE"]["host"])
+    DB_NAME = str(c["DATABASE"]["name"])
 
 
 # Connect to MariaDB Platform
@@ -253,12 +256,6 @@ def get_if_existing_account(address: str):
 
     raw_audit_log(address + " has " + str(normal_transactions) + " transactions and " +
                   str(erc_20_transactions) + " erc-20 transactions.")
-
-    if normal_transactions == 1 and erc_20_transactions == 0 and erc_721_transactions == 0 and \
-            normal_tx_content[0]['from'] == "0x8c5a6c767ee7084a8c656acd457da9561163ae7e":
-        raw_audit_log(address + " is a matic.supply scammer.")
-        add_blacklisted_address("", address)
-        return False
 
     if 1 <= normal_transactions < 20 or 1 <= erc_20_transactions < 20 or 1 <= erc_721_transactions < 20:
         return True

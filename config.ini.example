@@ -1,11 +1,12 @@
 [GENERAL]
-audit_log =
+audit_log = [full path to an existing .txt file for logs]
+api_key = [polygonscan api key]
 
 [TOKEN COUNTS]
 MAX_TOKENS_REQUESTED = 0.02
 MAX_MUMBAI_TOKENS_REQUESTED = 5
 
-[WALLET]
+[FAUCET]
 address = 0x
 private_key = [can find in Metamask]
 
@@ -15,16 +16,16 @@ testnet = https://rpc-mumbai.maticvigil.com
 
 [DISCORD]
 token =
-member_roles = ("member", "admin", "etc", )
-developer_roles = ("Developer", "etc", )
-admin_roles = ("admin", )
+member_roles = ["member", "admin", "etc", ]
+developer_roles = ["Developer", "etc", ]
+admin_roles = ["admin", ]
 error_channel = [right-click channel -> copy ID]
 
 [DATABASE]
-user = admin
+db_check = True/False [If True, database info required. If False, no DB needed]
+user = [usually admin]
 password =
 host =
 name =
-api_key = [polygonscan api key]
 
 
