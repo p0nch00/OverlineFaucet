@@ -1,0 +1,30 @@
+[GENERAL]
+audit_log =
+
+[TOKEN COUNTS]
+MAX_TOKENS_REQUESTED = 0.02
+MAX_MUMBAI_TOKENS_REQUESTED = 5
+
+[WALLET]
+address = 0x
+private_key = [can find in Metamask]
+
+[RPC]
+mainnet = https://polygon-rpc.com
+testnet = https://rpc-mumbai.maticvigil.com
+
+[DISCORD]
+token =
+member_roles = ("member", "admin", "etc", )
+developer_roles = ("Developer", "etc", )
+admin_roles = ("admin", )
+error_channel = [right-click channel -> copy ID]
+
+[DATABASE]
+user = admin
+password =
+host =
+name =
+api_key = [polygonscan api key]
+
+

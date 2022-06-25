@@ -1,16 +1,20 @@
 import re
 from datetime import datetime
 
-import secrets
 from logger import log, raw_audit_log
 from web3 import Web3
 
+# Load config
+c = configparser.ConfigParser()
+c.read("config.ini", encoding='utf-8')
 
-rpc_url = "https://polygon-rpc.com"
+FAUCET_ADDRESS = str(c["FAUCET"]["address"])
+FAUCET_PRIVKEY = str(c["FAUCET"]["private_key"])
+
+rpc_url = str(c["RPC"]["mainnet"])
 w3 = Web3(Web3.HTTPProvider(rpc_url))
 
-#mumbai_rpc_url = "https://rpc-mumbai.maticvigil.com/v1/79315e5d55714f504d1412863718c72c5f344325"
-mumbai_rpc_url = "https://rpc-mumbai.maticvigil.com"
+mumbai_rpc_url = rpc_url = str(c["RPC"]["testnet"])
 mumbai_w3 = Web3(Web3.HTTPProvider(mumbai_rpc_url))
 
 
@@ -22,20 +26,18 @@ def valid_address(address):
 
 # Send a transaction to the requestor
 def send_faucet_transaction(address: str, tokens: float):
-    # Get faucet address and faucet's private key from secrets file
-    token_from, token_from_private_key = secrets.get_guild_wallet()
 
     # Token input is in Matic, we need to add the additional 18 decimal places
-    tokens = tokens*1e18
+    tokens = tokens * 1e18
 
     # Get how many transactions we've done to know what our next nonce will be
-    nonce = w3.eth.getTransactionCount(token_from)
+    nonce = w3.eth.getTransactionCount(FAUCET_ADDRESS)
     log("Trying to send mainnet transaction with nonce " + str(nonce) + "...")
 
     # Iterate over a few different gas values, with 30 seconds between to make sure it goes through
-    for gas in [35*1e9, 50*1e9, 100*1e9, 350*1e9, 500*1e9, 1000*1e9]:
+    for gas in [35 * 1e9, 50 * 1e9, 100 * 1e9, 350 * 1e9, 500 * 1e9, 1000 * 1e9]:
         try:
-            log("Trying mainnet transaction to " + address + " with nonce " + str(nonce) + " and gas " + str(gas/1e9))
+            log("Trying mainnet transaction to " + address + " with nonce " + str(nonce) + " and gas " + str(gas / 1e9))
 
             # Create the transaction
             signed_txn = w3.eth.account.sign_transaction(dict(
@@ -47,7 +49,7 @@ def send_faucet_transaction(address: str, tokens: float):
                 data=b'',
                 chainId=137,
             ),
-              token_from_private_key,
+                FAUCET_PRIVKEY,
             )
 
             # Send the transaction
@@ -58,7 +60,7 @@ def send_faucet_transaction(address: str, tokens: float):
 
             log("Sent mainnet transaction to " + address + " with nonce " + str(nonce))
             raw_audit_log(str(datetime.now()) + ": Sent " + str(tokens) + " Matic to " + str(address) +
-                          " with nonce " + str(nonce) + " and gas " + str(gas/1e9))
+                          " with nonce " + str(nonce) + " and gas " + str(gas / 1e9))
             return True
         except Exception as e:
             raw_audit_log(str(datetime.now()) + ": Sending failed: " + str(e))
@@ -67,19 +69,17 @@ def send_faucet_transaction(address: str, tokens: float):
 
 
 def send_mumbai_faucet_transaction(address: str, tokens: float):
-    token_from, token_from_private_key = secrets.get_guild_wallet()
-
-    nonce = mumbai_w3.eth.getTransactionCount(token_from)
+    nonce = mumbai_w3.eth.getTransactionCount(FAUCET_ADDRESS)
     signed_txn = mumbai_w3.eth.account.sign_transaction(dict(
         nonce=nonce,
         gasPrice=25000000000,
         gas=21000,
         to=address,
-        value=int(tokens*1e18),
+        value=int(tokens * 1e18),
         data=b'',
         chainId=80001,
-      ),
-      token_from_private_key,
+    ),
+        FAUCET_PRIVKEY,
     )
 
     try:
@@ -97,19 +97,18 @@ def send_mumbai_faucet_transaction(address: str, tokens: float):
 
 # Get address balance
 def get_balance(address):
-
     try:
-        response = w3.eth.getBalance(address)/1e18
+        response = w3.eth.getBalance(address) / 1e18
     except Exception as e:
         print(e)
         response = 0.0
     return response
 
+
 # Get faucet balance
 def get_faucet_balance():
-    address, token_from_private_key = secrets.get_guild_wallet()
     try:
-        response = w3.eth.getBalance(address)/1e18
+        response = w3.eth.getBalance(FAUCET_ADDRESS) / 1e18
     except Exception as e:
         print(e)
         response = 0.0
@@ -117,12 +116,8 @@ def get_faucet_balance():
 
 
 def get_mumbai_balance():
-    token_from, token_from_private_key = secrets.get_guild_wallet()
-
     try:
-        print(mumbai_w3.eth.getBalance(token_from))
-        response = mumbai_w3.eth.getBalance(token_from)/1e18
+        response = mumbai_w3.eth.getBalance(FAUCET_ADDRESS) / 1e18
     except Exception as e:
         response = e
     return response
-

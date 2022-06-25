@@ -2,24 +2,34 @@ import datetime
 from math import floor
 import requests
 from logger import log, raw_audit_log
-import secrets
 
 import mariadb
+
+# Load config
+c = configparser.ConfigParser()
+c.read("config.ini", encoding='utf-8')
+
+FAUCET_ADDRESS = str(c["FAUCET"]["address"])
+
+DB_USER = str(c["DATABASE"]["user"])
+DB_PASSWORD = str(c["DATABASE"]["password"])
+DB_HOST = str(c["DATABASE"]["host"])
+DB_NAME = str(c["DATABASE"]["name"])
+POLYGONSCAN_API_KEY = str(c["DATABASE"]["api_key"])
 
 
 # Connect to MariaDB Platform
 def connection():
     try:
         conn = mariadb.connect(
-            user=secrets.MARIADB_USER,
-            password=secrets.MARIADB_PASSWORD,
-            host=secrets.MARIADB_HOST,
+            user=DB_USER,
+            password=DB_PASSWORD,
+            host=DB_HOST,
             port=3306,
-            database="faucet"
+            database=DB_NAME
         )
 
         return conn
-
 
     except mariadb.Error as e:
         raw_audit_log(f"Error connecting to MariaDB Platform: {e}")
@@ -142,7 +152,7 @@ def check_if_blacklisted(user: str, address: str):
                             "&page=1" +
                             "&offset=100" +
                             "&sort=asc" +
-                            "&apikey=" + secrets.POLYGONSCAN_API_KEY)
+                            "&apikey=" + POLYGONSCAN_API_KEY)
 
     addresses = [address]
     result = response.json()['result']
@@ -213,7 +223,7 @@ def get_if_existing_account(address: str):
                             "&page=1" +
                             "&offset=10" +
                             "&sort=asc" +
-                            "&apikey=" + secrets.POLYGONSCAN_API_KEY)
+                            "&apikey=" + POLYGONSCAN_API_KEY)
     normal_tx_content = response.json()['result']
     normal_transactions = len(normal_tx_content)
 
@@ -226,7 +236,7 @@ def get_if_existing_account(address: str):
                             "&page=1" +
                             "&offset=5" +
                             "&sort=asc" +
-                            "&apikey=" + secrets.POLYGONSCAN_API_KEY)
+                            "&apikey=" + POLYGONSCAN_API_KEY)
     erc_20_transactions = len(response.json()['result'])
 
     response = requests.get("https://api.polygonscan.com/api" +
@@ -238,7 +248,7 @@ def get_if_existing_account(address: str):
                             "&page=1" +
                             "&offset=5" +
                             "&sort=asc" +
-                            "&apikey=" + secrets.POLYGONSCAN_API_KEY)
+                            "&apikey=" + POLYGONSCAN_API_KEY)
     erc_721_transactions = len(response.json()['result'])
 
     raw_audit_log(address + " has " + str(normal_transactions) + " transactions and " +
