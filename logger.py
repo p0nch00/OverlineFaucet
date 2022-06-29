@@ -9,7 +9,6 @@ import logging
 # Load config
 c = configparser.ConfigParser()
 c.read("config.ini", encoding='utf-8')
-argparser = argparse.ArgumentParser()
 
 AUDIT_LOG = str(c["GENERAL"]["audit_log"])
 
