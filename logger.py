@@ -1,4 +1,3 @@
-import secrets
 from datetime import datetime
 
 import logging
@@ -6,6 +5,13 @@ import logging
 #log = logging.getLogger('faucet')
 #log.addHandler(JournalHandler())
 #log.setLevel(logging.INFO)
+
+# Load config
+c = configparser.ConfigParser()
+c.read("config.ini", encoding='utf-8')
+argparser = argparse.ArgumentParser()
+
+AUDIT_LOG = str(c["GENERAL"]["audit_log"])
 
 #def log(message):
 #    if secrets.environment == 'test':
@@ -18,11 +24,11 @@ import logging
 
 
 def log(message):
-    print(message)
+    raw_audit_log(message)
 
 
 def audit_log(user_name: str, user_id: str, address: str, tokens: float):
-    f = open(secrets.AUDIT_LOG, "a")
+    f = open(AUDIT_LOG, "a")
     audit = str(datetime.now()) + ": " + user_name + "(" + user_id + ") requested " + str(tokens) + " to " + address
     f.write(audit)
     f.write('\n')
