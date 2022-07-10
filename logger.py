@@ -1,3 +1,4 @@
+import secrets
 from datetime import datetime
 import configparser
 import logging
@@ -35,7 +36,4 @@ def audit_log(user_name: str, user_id: str, address: str, tokens: float):
 
 
 def raw_audit_log(message: str):
-    f = open(secrets.AUDIT_LOG, "a")
-    f.write(message)
-    f.write('\n')
-    f.close()
+    return

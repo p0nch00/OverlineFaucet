@@ -15,10 +15,10 @@ Add a .service file for easy start/stop functions
 ```bash
 sudo cat > /etc/systemd/system/faucet.service << "EOF"
 [Unit]
-  Description=PolygonFaucet
+  Description=OverlineFaucet
 
 [Service]
-  ExecStart=/usr/bin/python3 /home/ubuntu/PolygonFaucet/main.py
+  ExecStart=/usr/bin/python3 /home/ubuntu/OverlineFaucet/main.py
   LimitNOFILE=4096
 
 [Install]
