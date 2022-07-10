@@ -1,0 +1,31 @@
+[GENERAL]
+audit_log = log.txt
+api_key = [polygonscan api key]
+
+[TOKEN COUNTS]
+MAX_TOKENS_REQUESTED = 0.02
+MAX_MUMBAI_TOKENS_REQUESTED = 5
+
+[FAUCET]
+address = 0x
+private_key = 
+
+[RPC]
+mainnet = http://10.7.0.1:3000/rpc
+testnet = https://rpc-mumbai.maticvigil.com
+
+[DISCORD]
+token = 
+member_roles = ["faucet"]
+developer_roles = ["Owner"]
+admin_roles = ["Owner"]
+error_channel = []
+
+[DATABASE]
+db_check = False
+user = [usually admin]
+password =
+host =
+name =
+
+
