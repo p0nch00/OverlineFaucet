@@ -50,8 +50,8 @@ async def mainnet_faucet(ctx):
 
 
 @bot.command(name='send', help='usage: faucet-send  [address] [coins]')
-@commands.has_any_role(*MEMBER_DISCORD_ROLES)
 async def mainnet_faucet(ctx, address: str, tokens=0.01):
+
     # tokens = 0.01
     audit_log(str(ctx.author), str(ctx.author.id), address, tokens)
 
@@ -110,27 +110,18 @@ async def mainnet_faucet(ctx, address: str, tokens=0.01):
 
     # if we passed all the above checks, proceed
     else:
-        await ctx.send("The transaction has started and can take up to 2 minutes. Please wait until " +
-                       "confirmation before requesting more.")
+        await ctx.send("The transaction has started and can take up to 2 minutes.")
 
         success = faucet.send_faucet_transaction(address, tokens)
+        response = "**Sent " + str(tokens) + " OL to " + address[:4] + "..." + address[-2:] + \
+                   " with " + str(success) + ". **The faucet now has " + str(faucet.get_faucet_balance()) + " OL left."
 
-        if success:
-            if DB_CHECK:
-                user_db.add_user(str(ctx.author.id), str(ctx.author))
-                user_db.add_transaction(str(ctx.author.id), address, tokens, datetime.now().strftime("%m/%d/%Y, %H:%M:%S"),
-                                        "Mainnet")
-            response = "**Sent " + str(tokens) + " OL to " + address[:6] + "..." + \
-                       address[-4:] + ".**\n" + \
-                       thanks(FAUCET_ADDRESS)
-
-        else:
-            response = "The bot cannot confirm the transaction went through, please check on Explorer. " \
-                       "If still not received, try again."
 
     # embed = discord.Embed()
     # embed.description = response
     await ctx.send(response)
+
+
 
 
 @bot.command(name='override', help='usage: faucet-override [address] [tokens]')
@@ -151,11 +142,8 @@ async def mainnet_faucet_override(ctx, address: str, tokens=0.01):
             await ctx.send("The transaction has started and can take up to 2 minutes.")
 
             success = faucet.send_faucet_transaction(address, tokens)
-            if success:
-                response = "**Sent " + str(tokens) + " OL to " + address[:4] + "..." + address[-2:] + \
-                           ". **The faucet now has " + str(faucet.get_faucet_balance()) + " OL left."
-            else:
-                response = "There was an error, please try again later or alert an admin."
+            response = "**Sent " + str(tokens) + " OL to " + address[:4] + "..." + address[-2:] + \
+                           "with "+ str(success) +". **The faucet now has " + str(faucet.get_faucet_balance()) + " OL left."
         else:
             response = "The faucet does not have enough funds. Please refill. \n`{FAUCET_ADDRESS}`"
     else:
@@ -173,7 +161,7 @@ async def mainnet_faucet_error(ctx, error):
         await error_channel.send("CommandInvokeError: \n" + str(error))
         raise error
     if isinstance(error, CommandInvokeError):
-        await ctx.send("There was error that <@712863455467667526> needs to fix. Please try again later.")
+        await ctx.send("There was error that <@267238070112223232> needs to fix. Please try again later.")
         await error_channel.send("CommandInvokeError: \n" + str(error))
         raise error
     elif isinstance(error, BadArgument):

@@ -32,10 +32,13 @@ def valid_address(address):
 # Send a transaction to the requestor
 def send_faucet_transaction(address: str, tokens: float):
     headers = {'Content-type': 'application/json', 'Accept': 'application/json', 'authorization': 'Basic OmNvcnJlY3QtaG9yc2UtYmF0dGVyeS1zdGFwbGU='}
-    data = {"jsonrpc":"2.0","method":"newTX","params":[FAUCET_ADDRESS, address, str(tokens), "0", FAUCET_PRIVKEY],"id":1}
+    data = {"jsonrpc":"2.0","method":"newTx","params":[FAUCET_ADDRESS, address, str(tokens), "0", FAUCET_PRIVKEY],"id":1}
     print(data)
-    requests.post(FAUCET_RPC, data=json.dumps(data), headers=headers)
-    return True
+    reply = requests.post(FAUCET_RPC, data=json.dumps(data), headers=headers)
+    rep = json.loads(reply.text)
+    result = rep['result']
+    resp = result['txHash']
+    return str(resp)
 
 
 
